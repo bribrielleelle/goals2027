@@ -6,8 +6,10 @@ import {
   Plus,
   Sparkles,
   LogOut,
+  Trash2,
   X,
 } from 'lucide-react';
+import { useState } from 'react';
 import { PlannerPage, ThemeDefinition, WorkspaceSettings } from '../types/planner';
 
 interface LeftRailProps {
@@ -16,6 +18,7 @@ interface LeftRailProps {
   accountName: string;
   accountInitials: string;
   onSignOut: () => void;
+  onDeleteAccount: () => Promise<void>;
   pages: PlannerPage[];
   activeView: 'home' | 'page';
   activePageId: string | null;
@@ -33,6 +36,7 @@ export const LeftRail: React.FC<LeftRailProps> = ({
   accountName,
   accountInitials,
   onSignOut,
+  onDeleteAccount,
   pages,
   activeView,
   activePageId,
@@ -43,12 +47,30 @@ export const LeftRail: React.FC<LeftRailProps> = ({
   onOpenNewPage,
   onOpenCustomizer,
 }) => {
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const isTinted = settings.railStyle === 'tinted';
   const railBackground = isTinted ? theme.railBg : theme.surfaceAlt;
   const railText = isTinted ? theme.railText : theme.textPrimary;
   const railMuted = isTinted ? 'rgba(255,255,255,0.75)' : theme.textMuted;
   const activeBg = isTinted ? theme.railActiveBg : theme.accentSoft;
   const activeText = isTinted ? theme.railActiveText : theme.accentText;
+
+  const handleDeleteAccount = async () => {
+    setDeletingAccount(true);
+    setDeleteError(null);
+    try {
+      await onDeleteAccount();
+    } catch (error) {
+      setDeleteError(
+        error instanceof Error
+          ? error.message
+          : 'Your account could not be deleted. Please try again.'
+      );
+      setDeletingAccount(false);
+    }
+  };
 
   const railContent = (
     <aside
@@ -215,6 +237,17 @@ export const LeftRail: React.FC<LeftRailProps> = ({
           <LogOut className="h-3.5 w-3.5" />
           <span>Sign out</span>
         </button>
+        <button
+          type="button"
+          onClick={() => {
+            setDeleteError(null);
+            setDeleteDialogOpen(true);
+          }}
+          className="mt-1 flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-rose-700 transition-colors hover:bg-rose-50"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+          <span>Delete account</span>
+        </button>
       </div>
     </aside>
   );
@@ -232,6 +265,61 @@ export const LeftRail: React.FC<LeftRailProps> = ({
             onClick={onCloseMobile}
           />
           <div className="relative z-10 h-full">{railContent}</div>
+        </div>
+      )}
+
+      {deleteDialogOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/45 p-4">
+          <section
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="delete-account-title"
+            aria-describedby="delete-account-description"
+            className="w-full max-w-md rounded-2xl border border-[#F2DCE5] bg-white p-6 text-[#2A2226] shadow-2xl"
+          >
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-rose-50 text-rose-700">
+                <Trash2 className="h-5 w-5" />
+              </div>
+              <div>
+                <h2 id="delete-account-title" className="text-lg font-bold">
+                  Delete your account?
+                </h2>
+                <p
+                  id="delete-account-description"
+                  className="mt-2 text-sm leading-6 text-[#786870]"
+                >
+                  This permanently deletes your account and all saved planner
+                  pages, todos, and settings. This action cannot be undone.
+                </p>
+              </div>
+            </div>
+
+            {deleteError && (
+              <p role="alert" className="mt-4 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800">
+                {deleteError}
+              </p>
+            )}
+
+            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                disabled={deletingAccount}
+                onClick={() => setDeleteDialogOpen(false)}
+                className="rounded-xl border border-[#EAD9E0] px-4 py-2.5 text-sm font-semibold text-[#51434A] hover:bg-[#FFFBFD] disabled:opacity-50"
+              >
+                Keep my account
+              </button>
+              <button
+                type="button"
+                disabled={deletingAccount}
+                onClick={() => void handleDeleteAccount()}
+                className="rounded-xl bg-rose-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-rose-800 disabled:cursor-wait disabled:opacity-60"
+              >
+                {deletingAccount ? 'Deleting account…' : 'Delete my account'}
+              </button>
+            </div>
+          </section>
         </div>
       )}
     </>

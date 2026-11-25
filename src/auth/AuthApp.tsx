@@ -11,6 +11,7 @@ import { publishableKeyFromHost } from '@clerk/react/internal';
 import { shadcn } from '@clerk/themes';
 import { Link, Redirect, Route, Router as WouterRouter, Switch, useLocation } from 'wouter';
 import { PlannerWorkspaceApp } from '../App';
+import { deleteAccount } from '../lib/workspaceApi';
 
 const clerkPubKey = publishableKeyFromHost(
   window.location.hostname,
@@ -247,6 +248,10 @@ function AuthenticatedPlanner() {
       accountName={name}
       accountInitials={accountInitials(name)}
       onSignOut={() => void signOut({ redirectUrl: basePath || '/' })}
+      onDeleteAccount={async () => {
+        await deleteAccount();
+        window.location.replace(basePath || '/');
+      }}
     />
   );
 }

@@ -1,7 +1,7 @@
 import { createServer as createHttpServer } from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { clerkMiddleware, getAuth } from '@clerk/express';
+import { clerkClient, clerkMiddleware, getAuth } from '@clerk/express';
 import { publishableKeyFromHost } from '@clerk/shared/keys';
 import express, { type NextFunction, type Request, type Response } from 'express';
 import { Pool } from 'pg';
@@ -135,6 +135,19 @@ app.put('/api/workspace', requireUser, async (req, res, next) => {
     );
 
     res.json(result.rows[0]);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.delete('/api/account', requireUser, async (_req, res, next) => {
+  try {
+    const userId = res.locals.userId as string;
+
+    await pool.query('DELETE FROM planner_workspaces WHERE user_id = $1', [userId]);
+    await clerkClient.users.deleteUser(userId);
+
+    res.status(204).end();
   } catch (error) {
     next(error);
   }

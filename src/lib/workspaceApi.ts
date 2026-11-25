@@ -30,3 +30,17 @@ export async function saveWorkspace(
   });
   return expectWorkspaceResponse(response);
 }
+
+export async function deleteAccount(): Promise<void> {
+  const response = await fetch('/api/account', {
+    method: 'DELETE',
+    credentials: 'same-origin',
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Your session expired. Sign in again before deleting your account.');
+    }
+    throw new Error('Your account could not be deleted. Please try again.');
+  }
+}

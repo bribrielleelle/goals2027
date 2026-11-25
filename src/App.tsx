@@ -28,6 +28,7 @@ interface PlannerWorkspaceAppProps {
   accountName: string;
   accountInitials: string;
   onSignOut: () => void;
+  onDeleteAccount: () => Promise<void>;
 }
 
 export function PlannerWorkspaceApp({
@@ -35,6 +36,7 @@ export function PlannerWorkspaceApp({
   accountName,
   accountInitials,
   onSignOut,
+  onDeleteAccount,
 }: PlannerWorkspaceAppProps) {
   const [pages, setPages] = useState<PlannerPage[]>([]);
   const [quickTodos, setQuickTodos] = useState<QuickTodo[]>([]);
@@ -301,6 +303,7 @@ export function PlannerWorkspaceApp({
         accountName={accountName}
         accountInitials={accountInitials}
         onSignOut={onSignOut}
+        onDeleteAccount={onDeleteAccount}
         pages={pages}
         activeView={activeView}
         activePageId={activePageId}
