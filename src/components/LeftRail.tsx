@@ -5,6 +5,7 @@ import {
   Palette,
   Plus,
   Sparkles,
+  LogOut,
   X,
 } from 'lucide-react';
 import { PlannerPage, ThemeDefinition, WorkspaceSettings } from '../types/planner';
@@ -12,6 +13,9 @@ import { PlannerPage, ThemeDefinition, WorkspaceSettings } from '../types/planne
 interface LeftRailProps {
   theme: ThemeDefinition;
   settings: WorkspaceSettings;
+  accountName: string;
+  accountInitials: string;
+  onSignOut: () => void;
   pages: PlannerPage[];
   activeView: 'home' | 'page';
   activePageId: string | null;
@@ -26,6 +30,9 @@ interface LeftRailProps {
 export const LeftRail: React.FC<LeftRailProps> = ({
   theme,
   settings,
+  accountName,
+  accountInitials,
+  onSignOut,
   pages,
   activeView,
   activePageId,
@@ -67,7 +74,7 @@ export const LeftRail: React.FC<LeftRailProps> = ({
                 color: isTinted ? theme.accent : '#FFFFFF',
               }}
             >
-              {settings.userInitials}
+              {settings.userInitials || accountInitials}
             </div>
             <div className="min-w-0">
               <div className="truncate text-sm font-semibold leading-tight">
@@ -77,7 +84,7 @@ export const LeftRail: React.FC<LeftRailProps> = ({
                 className="truncate text-[11px]"
                 style={{ color: railMuted }}
               >
-                {settings.userName}&apos;s space
+                {settings.userName || accountName}&apos;s space
               </div>
             </div>
           </button>
@@ -198,6 +205,16 @@ export const LeftRail: React.FC<LeftRailProps> = ({
           <LayoutGrid className="h-3 w-3" />
           <span className="font-tabular">{pages.length} custom pages</span>
         </div>
+
+        <button
+          type="button"
+          onClick={onSignOut}
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-medium transition-colors hover:bg-black/5"
+          style={{ color: railText }}
+        >
+          <LogOut className="h-3.5 w-3.5" />
+          <span>Sign out</span>
+        </button>
       </div>
     </aside>
   );

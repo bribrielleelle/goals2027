@@ -1,0 +1,1 @@
+- [Fresh account workspaces](account-workspace-start-state.md) — every new account starts empty; never auto-import anonymous browser data.

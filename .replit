@@ -1,4 +1,4 @@
-modules = ["bun-1.3", "nodejs-24"]
+modules = ["bun-1.3", "nodejs-24", "postgresql-16"]
 
 [nix]
 channel = "stable-25_05"
@@ -24,7 +24,7 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "bun run dev --port 5000"
+args = "bun run dev"
 waitForPort = 5000
 
 [[ports]]

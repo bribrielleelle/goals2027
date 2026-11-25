@@ -12,58 +12,45 @@ import {
   THEMES,
 } from './data/presets';
 import {
+  createEmptyWorkspace,
+  type PlannerWorkspace,
+} from './data/workspaceDefaults';
+import { loadWorkspace, saveWorkspace } from './lib/workspaceApi';
+import {
   PlannerPage,
   QuickTodo,
   ThemeDefinition,
   WorkspaceSettings,
 } from './types/planner';
 
-const STORAGE_KEY = 'komorebi_planner_workspace_v1';
-
-interface PersistedWorkspace {
-  pages: PlannerPage[];
-  quickTodos: QuickTodo[];
-  settings: WorkspaceSettings;
+interface PlannerWorkspaceAppProps {
+  userId: string;
+  accountName: string;
+  accountInitials: string;
+  onSignOut: () => void;
 }
 
-function loadInitialState(): PersistedWorkspace {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw) as Partial<PersistedWorkspace>;
-      if (
-        Array.isArray(parsed.pages) &&
-        parsed.pages.length > 0 &&
-        Array.isArray(parsed.quickTodos) &&
-        parsed.settings
-      ) {
-        return {
-          pages: parsed.pages,
-          quickTodos: parsed.quickTodos,
-          settings: { ...DEFAULT_SETTINGS, ...parsed.settings },
-        };
-      }
-    }
-  } catch {
-    // Fallback to defaults if storage is unavailable or corrupted
-  }
-  return {
-    pages: INITIAL_PAGES,
-    quickTodos: INITIAL_QUICK_TODOS,
-    settings: DEFAULT_SETTINGS,
-  };
-}
-
-export default function App() {
-  const initial = useMemo(() => loadInitialState(), []);
-  const [pages, setPages] = useState<PlannerPage[]>(initial.pages);
-  const [quickTodos, setQuickTodos] = useState<QuickTodo[]>(initial.quickTodos);
-  const [settings, setSettings] = useState<WorkspaceSettings>(initial.settings);
+export function PlannerWorkspaceApp({
+  userId,
+  accountName,
+  accountInitials,
+  onSignOut,
+}: PlannerWorkspaceAppProps) {
+  const [pages, setPages] = useState<PlannerPage[]>([]);
+  const [quickTodos, setQuickTodos] = useState<QuickTodo[]>([]);
+  const [settings, setSettings] = useState<WorkspaceSettings>(
+    () => createEmptyWorkspace().settings
+  );
+  const [workspaceLoaded, setWorkspaceLoaded] = useState(false);
+  const [workspaceLoadError, setWorkspaceLoadError] = useState<string | null>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  const [saveAttempt, setSaveAttempt] = useState(0);
+  const [saveStatus, setSaveStatus] = useState<'saving' | 'saved' | 'error'>(
+    'saved'
+  );
 
   const [activeView, setActiveView] = useState<'home' | 'page'>('home');
-  const [activePageId, setActivePageId] = useState<string | null>(
-    initial.pages[0]?.id ?? null
-  );
+  const [activePageId, setActivePageId] = useState<string | null>(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [customizerOpen, setCustomizerOpen] = useState(false);
@@ -76,17 +63,60 @@ export default function App() {
     }, 2600);
   };
 
-  // Persist workspace to localStorage
+  // Loading always starts from a blank in-memory state. Anonymous browser data
+  // is left untouched and is never attached to a signed-in account.
   useEffect(() => {
-    try {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({ pages, quickTodos, settings })
-      );
-    } catch {
-      // Ignore quota errors
-    }
-  }, [pages, quickTodos, settings]);
+    const controller = new AbortController();
+    setWorkspaceLoaded(false);
+    setWorkspaceLoadError(null);
+    setPages([]);
+    setQuickTodos([]);
+    setSettings(createEmptyWorkspace().settings);
+    setActiveView('home');
+    setActivePageId(null);
+
+    loadWorkspace(controller.signal)
+      .then((workspace) => {
+        if (controller.signal.aborted) return;
+        setPages(workspace.pages);
+        setQuickTodos(workspace.quickTodos);
+        setSettings(workspace.settings);
+        setActivePageId(workspace.pages[0]?.id ?? null);
+        setWorkspaceLoaded(true);
+      })
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) return;
+        setWorkspaceLoadError(
+          error instanceof Error
+            ? error.message
+            : 'Your workspace could not be loaded.'
+        );
+      });
+
+    return () => controller.abort();
+  }, [userId, loadAttempt]);
+
+  // Debounce saves so text edits and drag operations do not flood the API.
+  useEffect(() => {
+    if (!workspaceLoaded) return;
+    let cancelled = false;
+    const workspace: PlannerWorkspace = { pages, quickTodos, settings };
+    const timeout = window.setTimeout(() => {
+      setSaveStatus('saving');
+      saveWorkspace(workspace)
+        .then(() => {
+          if (!cancelled) setSaveStatus('saved');
+        })
+        .catch(() => {
+          if (!cancelled) setSaveStatus('error');
+        });
+    }, 450);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeout);
+    };
+  }, [workspaceLoaded, pages, quickTodos, settings, saveAttempt]);
 
   // Resolve active theme with optional custom accent override
   const activeTheme: ThemeDefinition = useMemo(() => {
@@ -125,6 +155,31 @@ export default function App() {
     [pages, activePageId]
   );
 
+  if (workspaceLoadError) {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#fff9fb] px-6 text-center text-[#2A2226]">
+        <img src="/logo.svg" alt="" className="h-12 w-12 rounded-2xl" />
+        <h1 className="text-xl font-bold">We couldn&apos;t open your workspace</h1>
+        <p className="max-w-sm text-sm text-[#786870]">{workspaceLoadError}</p>
+        <button
+          type="button"
+          onClick={() => setLoadAttempt((attempt) => attempt + 1)}
+          className="rounded-xl bg-[#DB4F88] px-4 py-2 text-sm font-semibold text-white"
+        >
+          Try again
+        </button>
+      </main>
+    );
+  }
+
+  if (!workspaceLoaded) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#fff9fb] text-sm text-[#786870]">
+        Opening your workspace…
+      </main>
+    );
+  }
+
   const handleOpenPage = (pageId: string) => {
     setActivePageId(pageId);
     setActiveView('page');
@@ -153,7 +208,6 @@ export default function App() {
   };
 
   const handleDeletePage = (pageId: string) => {
-    if (pages.length <= 1) return;
     setPages((prev) => prev.filter((p) => p.id !== pageId));
     if (activePageId === pageId) {
       setActiveView('home');
@@ -244,6 +298,9 @@ export default function App() {
       <LeftRail
         theme={activeTheme}
         settings={settings}
+        accountName={accountName}
+        accountInitials={accountInitials}
+        onSignOut={onSignOut}
         pages={pages}
         activeView={activeView}
         activePageId={activePageId}
@@ -371,6 +428,28 @@ export default function App() {
           {toastMsg}
         </div>
       )}
+
+      <div
+        className={`fixed bottom-4 left-1/2 z-40 -translate-x-1/2 rounded-full border px-3 py-1.5 text-[11px] shadow-sm ${
+          saveStatus === 'error'
+            ? 'border-rose-200 bg-white text-rose-700'
+            : 'border-[#F2DCE5] bg-white/95 text-[#786870]'
+        }`}
+        role="status"
+        aria-live="polite"
+      >
+        {saveStatus === 'saving' && 'Saving to your account…'}
+        {saveStatus === 'saved' && 'Saved to your account'}
+        {saveStatus === 'error' && (
+          <button
+            type="button"
+            onClick={() => setSaveAttempt((attempt) => attempt + 1)}
+            className="font-semibold underline underline-offset-2"
+          >
+            Couldn&apos;t save. Retry
+          </button>
+        )}
+      </div>
     </div>
   );
 }

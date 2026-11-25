@@ -419,19 +419,17 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                           <Copy className="h-3.5 w-3.5" />
                           <span>Duplicate Page</span>
                         </button>
-                        {pages.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setOpenMenuId(null);
-                              onDeletePage(page.id);
-                            }}
-                            className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-rose-600 hover:bg-rose-50"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                            <span>Delete Page</span>
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOpenMenuId(null);
+                            onDeletePage(page.id);
+                          }}
+                          className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-rose-600 hover:bg-rose-50"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          <span>Delete Page</span>
+                        </button>
                       </div>
                     )}
                   </div>
