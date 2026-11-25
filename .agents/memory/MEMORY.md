@@ -1,1 +1,2 @@
 - [Fresh account workspaces](account-workspace-start-state.md) — every new account starts empty; never auto-import anonymous browser data.
+- [Replit workspace scan scope](replit-workspace-scan-scope.md) — restrict Tailwind sources and Vite watches to app files, not internal `.local` folders.

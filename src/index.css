@@ -1,6 +1,8 @@
 @layer theme, base, clerk, components, utilities;
-@import "tailwindcss";
+@import "tailwindcss" source(none);
 @import "@clerk/themes/shadcn.css";
+@source "../index.html";
+@source "./**/*.{html,js,ts,jsx,tsx}";
 @custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
