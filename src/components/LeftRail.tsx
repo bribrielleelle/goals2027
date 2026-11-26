@@ -1,6 +1,7 @@
 import React from 'react';
 import {
   Home,
+  CalendarDays,
   LayoutGrid,
   Palette,
   Plus,
@@ -20,11 +21,12 @@ interface LeftRailProps {
   onSignOut: () => void;
   onDeleteAccount: () => Promise<void>;
   pages: PlannerPage[];
-  activeView: 'home' | 'page';
+  activeView: 'home' | 'page' | 'calendar';
   activePageId: string | null;
   mobileOpen: boolean;
   onCloseMobile: () => void;
   onSelectHome: () => void;
+  onSelectCalendar: () => void;
   onSelectPage: (pageId: string) => void;
   onOpenNewPage: () => void;
   onOpenCustomizer: () => void;
@@ -43,6 +45,7 @@ export const LeftRail: React.FC<LeftRailProps> = ({
   mobileOpen,
   onCloseMobile,
   onSelectHome,
+  onSelectCalendar,
   onSelectPage,
   onOpenNewPage,
   onOpenCustomizer,
@@ -137,6 +140,23 @@ export const LeftRail: React.FC<LeftRailProps> = ({
           >
             <Home className="h-4 w-4 shrink-0" />
             <span>Dashboard</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              onSelectCalendar();
+              onCloseMobile();
+            }}
+            className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium transition-colors whitespace-nowrap shrink-0"
+            style={{
+              backgroundColor: activeView === 'calendar' ? activeBg : 'transparent',
+              color: activeView === 'calendar' ? activeText : railText,
+            }}
+            aria-current={activeView === 'calendar' ? 'page' : undefined}
+          >
+            <CalendarDays className="h-4 w-4 shrink-0" />
+            <span>Calendar</span>
           </button>
 
           <button

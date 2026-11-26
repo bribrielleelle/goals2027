@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { Menu, Palette, Plus } from 'lucide-react';
 import { CreatePageModal } from './components/CreatePageModal';
+import { pendingCalendarInvite } from './lib/calendarInvitation';
 import { CustomizerDrawer } from './components/CustomizerDrawer';
 import { HomeDashboard } from './components/HomeDashboard';
 import { LeftRail } from './components/LeftRail';
@@ -22,6 +23,9 @@ import {
   ThemeDefinition,
   WorkspaceSettings,
 } from './types/planner';
+
+const CalendarWorkspace = lazy(() => import('./components/calendar/CalendarWorkspace')
+  .then(module => ({ default: module.CalendarWorkspace })));
 
 interface PlannerWorkspaceAppProps {
   userId: string;
@@ -51,7 +55,7 @@ export function PlannerWorkspaceApp({
     'saved'
   );
 
-  const [activeView, setActiveView] = useState<'home' | 'page'>('home');
+  const [activeView, setActiveView] = useState<'home' | 'page' | 'calendar'>(() => pendingCalendarInvite() ? 'calendar' : 'home');
   const [activePageId, setActivePageId] = useState<string | null>(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -74,7 +78,7 @@ export function PlannerWorkspaceApp({
     setPages([]);
     setQuickTodos([]);
     setSettings(createEmptyWorkspace().settings);
-    setActiveView('home');
+    setActiveView(pendingCalendarInvite() ? 'calendar' : 'home');
     setActivePageId(null);
 
     loadWorkspace(controller.signal)
@@ -310,6 +314,7 @@ export function PlannerWorkspaceApp({
         mobileOpen={mobileNavOpen}
         onCloseMobile={() => setMobileNavOpen(false)}
         onSelectHome={() => setActiveView('home')}
+        onSelectCalendar={() => setActiveView('calendar')}
         onSelectPage={handleOpenPage}
         onOpenNewPage={() => setCreateModalOpen(true)}
         onOpenCustomizer={() => setCustomizerOpen(true)}
@@ -363,7 +368,11 @@ export function PlannerWorkspaceApp({
         </header>
 
         {/* Active View: Home Dashboard vs. Custom Goal Page */}
-        {activeView === 'home' || !activePage ? (
+        {activeView === 'calendar' ? (
+          <Suspense fallback={<p className="p-6" role="status">Loading calendar…</p>}>
+            <CalendarWorkspace theme={activeTheme} />
+          </Suspense>
+        ) : activeView === 'home' || !activePage ? (
           <HomeDashboard
             theme={activeTheme}
             settings={settings}

@@ -5,6 +5,7 @@ import { clerkClient, clerkMiddleware, getAuth } from '@clerk/express';
 import { publishableKeyFromHost } from '@clerk/shared/keys';
 import express, { type NextFunction, type Request, type Response } from 'express';
 import { Pool } from 'pg';
+import { calendarRoutes } from './calendarRoutes';
 import type { PlannerWorkspace } from '../src/data/workspaceDefaults';
 import { createEmptyWorkspace } from '../src/data/workspaceDefaults';
 import {
@@ -140,12 +141,16 @@ app.put('/api/workspace', requireUser, async (req, res, next) => {
   }
 });
 
+app.use('/api/calendar', requireUser, calendarRoutes(pool));
+
 app.delete('/api/account', requireUser, async (_req, res, next) => {
   try {
     const userId = res.locals.userId as string;
 
     await pool.query('DELETE FROM planner_workspaces WHERE user_id = $1', [userId]);
     await clerkClient.users.deleteUser(userId);
+    await pool.query('DELETE FROM calendars WHERE owner_id = $1', [userId]);
+    await pool.query('DELETE FROM calendar_invites WHERE accepted_user_id = $1', [userId]);
 
     res.status(204).end();
   } catch (error) {

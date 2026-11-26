@@ -12,6 +12,9 @@ import { shadcn } from '@clerk/themes';
 import { Link, Redirect, Route, Router as WouterRouter, Switch, useLocation } from 'wouter';
 import { PlannerWorkspaceApp } from '../App';
 import { deleteAccount } from '../lib/workspaceApi';
+import { pendingCalendarInvite, rememberCalendarInvite } from '../lib/calendarInvitation';
+
+rememberCalendarInvite();
 
 const clerkPubKey = publishableKeyFromHost(
   window.location.hostname,
@@ -174,6 +177,7 @@ function SignInPage() {
   return (
     <div className="flex min-h-[100dvh] items-center justify-center bg-[#fff8fb] px-4 py-10">
       <SignIn
+        forceRedirectUrl={pendingCalendarInvite() ? `${basePath}/app?calendarInvite=${pendingCalendarInvite()}` : undefined}
         routing="path"
         path={`${basePath}/sign-in`}
         signUpUrl={`${basePath}/sign-up`}
@@ -186,6 +190,7 @@ function SignUpPage() {
   return (
     <div className="flex min-h-[100dvh] items-center justify-center bg-[#fff8fb] px-4 py-10">
       <SignUp
+        forceRedirectUrl={pendingCalendarInvite() ? `${basePath}/app?calendarInvite=${pendingCalendarInvite()}` : undefined}
         routing="path"
         path={`${basePath}/sign-up`}
         signInUrl={`${basePath}/sign-in`}
